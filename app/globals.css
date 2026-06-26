@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Brand colors as CSS variables (RGB channels) so SOMA can re-skin later.
+   Primary = deep indigo/blue, Secondary = warm gold accent.
+--------------------------------------------------------------------------- */
+:root {
+  --brand: 49 46 129;        /* indigo-900-ish */
+  --brand-dark: 30 27 75;
+  --brand-light: 79 70 229;  /* indigo-600 */
+  --accent: 202 138 4;       /* gold (yellow-600) */
+  --accent-dark: 161 98 7;
+  --background: 248 250 252;  /* slate-50 */
+  --foreground: 15 23 42;     /* slate-900 */
+}
+
+/* Khmer OS Siemreap CSS fallback. We do NOT rely on it alone because it may
+   not be installed on every device; Noto Sans Khmer is loaded via next/font. */
+@font-face {
+  font-family: 'Khmer OS Siemreap';
+  src: local('Khmer OS Siemreap');
+  font-display: swap;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  /* Generous line-height keeps mixed Khmer + math text readable. */
+  line-height: 1.7;
+}
+
+/* Khmer text gets a touch more line-height for stacked characters. */
+:lang(km),
+.lang-km {
+  line-height: 1.9;
+}
+
+/* Make rendered Markdown content readable inside cards. */
+.prose-soma {
+  word-break: break-word;
+}
+.prose-soma p {
+  margin: 0.25rem 0;
+}
+.prose-soma ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-soma ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-soma table {
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.prose-soma th,
+.prose-soma td {
+  border: 1px solid rgb(203 213 225);
+  padding: 0.25rem 0.5rem;
+}
+.prose-soma strong {
+  font-weight: 700;
+}
+.prose-soma code {
+  background: rgb(241 245 249);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.95em;
+}
+.prose-soma img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+/* KaTeX should wrap on small screens instead of overflowing. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
