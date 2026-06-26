@@ -194,12 +194,24 @@ export default async function PaymentPage({
           </div>
         </section>
       )}
-
+      
       {payment.reviewer_note && (
         <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
           Reviewer note: {payment.reviewer_note}
         </p>
       )}
+
+      <p className="text-sm text-slate-500">
+        Need help with payment? Contact us on{' '}
+        <a
+          href="https://t.me/somaeducationgroup"
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-brand hover:underline"
+        >
+          Telegram
+        </a>
+      </p>
 
       <p className="text-xs text-slate-400">
         Order created {formatDateTime(payment.created_at)}.

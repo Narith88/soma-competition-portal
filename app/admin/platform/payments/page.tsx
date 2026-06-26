@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { formatUsd } from '@/lib/billing';
 import { formatDateTime } from '@/lib/utils';
-import { approvePaymentAction, rejectPaymentAction } from './actions';
+import { approvePaymentAction, rejectPaymentAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 

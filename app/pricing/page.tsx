@@ -208,8 +208,20 @@ export default async function PricingPage() {
 
       <footer className="mx-auto max-w-6xl px-4 py-10 text-center text-sm text-slate-400">
         Questions? Email{' '}
-        <a className="text-brand hover:underline" href="mailto:soma@example.com">
+        <a
+          className="text-brand hover:underline"
+          href="mailto:somaeducationgroup@gmail.com"
+        >
           somaeducationgroup@gmail.com
+        </a>
+        {' '}or contact us on{' '}
+        <a
+          className="text-brand hover:underline"
+          href="https://t.me/somaeducationgroup"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Telegram
         </a>
       </footer>
     </main>
