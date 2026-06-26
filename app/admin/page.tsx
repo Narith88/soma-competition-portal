@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveOrganization } from '@/lib/org';
+import { getOrgBillingStatus } from '@/lib/billing';
 import { formatDateTime, percentage } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,17 @@ export default async function AdminDashboard() {
   const supabase = createClient();
   const org = await getActiveOrganization();
   const orgId = org?.organization_id ?? '00000000-0000-0000-0000-000000000000';
+  const billingStatus = await getOrgBillingStatus(orgId);
+
+  const trialDaysLeft =
+    billingStatus?.is_trial && billingStatus.trial_ends_at
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(billingStatus.trial_ends_at).getTime() - Date.now()) / 86400000
+          )
+        )
+      : null;
 
   // Exams (current organization only)
   const { data: exams } = await supabase
@@ -90,6 +102,36 @@ export default async function AdminDashboard() {
           New Exam
         </Link>
       </div>
+
+      {billingStatus?.is_trial && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <div className="text-sm text-amber-900">
+            <span className="font-semibold">Free trial:</span>{' '}
+            {trialDaysLeft ?? 0} day{trialDaysLeft === 1 ? '' : 's'} left ·{' '}
+            {billingStatus.trial_respondents_used} / 30 respondents used.
+          </div>
+          <Link
+            href="/pricing"
+            className="rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-amber-700"
+          >
+            Upgrade
+          </Link>
+        </div>
+      )}
+      {billingStatus && !billingStatus.is_trial && billingStatus.out_of_respondents && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
+          <div className="text-sm text-red-900">
+            Out of respondent slots. New students cannot start exams until you top
+            up.
+          </div>
+          <Link
+            href="/pricing"
+            className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-red-700"
+          >
+            Buy a package
+          </Link>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">

@@ -11,6 +11,7 @@ import {
   Building2,
   Check,
   ChevronDown,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { switchOrganizationAction } from '@/app/onboarding/actions';
@@ -24,16 +25,19 @@ interface OrgItem {
 const links = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/exams', label: 'Exams', icon: FileText, exact: false },
+  { href: '/admin/billing', label: 'Billing', icon: CreditCard, exact: false },
 ];
 
 export default function AdminNav({
   email,
   organizations,
   activeOrgId,
+  isPlatformAdmin = false,
 }: {
   email?: string | null;
   organizations: OrgItem[];
   activeOrgId: string | null;
+  isPlatformAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -122,6 +126,21 @@ export default function AdminNav({
           </form>
         </nav>
       </div>
+      {isPlatformAdmin && (
+        <div className="border-t border-slate-100 bg-amber-50/50">
+          <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-1.5 text-xs">
+            <span className="rounded bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
+              Platform admin
+            </span>
+            <Link
+              href="/admin/platform/payments"
+              className="text-amber-800 hover:underline"
+            >
+              Review payments
+            </Link>
+          </div>
+        </div>
+      )}
       {email && (
         <div className="mx-auto max-w-6xl px-4 pb-2 text-xs text-slate-400">
           Signed in as {email}

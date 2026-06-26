@@ -1,58 +1,57 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { GraduationCap, LogIn } from 'lucide-react';
+import { GraduationCap, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import GoogleButton from '@/components/GoogleButton';
 
-export default function LoginClient() {
+export default function SignupClient() {
   const router = useRouter();
-  const params = useSearchParams();
-
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(
-    params.get('error') === 'not_admin'
-      ? 'That account is not part of this organization.'
-      : params.get('error') === 'oauth_failed'
-        ? 'Google sign-in failed. Please try again.'
-        : null
-  );
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotice(null);
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
     setLoading(true);
     try {
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
+        options: {
+          data: { full_name: fullName.trim() },
+          emailRedirectTo:
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/auth/callback`
+              : undefined,
+        },
       });
-      if (signInError) {
-        setError('Incorrect email or password.');
+      if (signUpError) {
+        setError(signUpError.message);
         setLoading(false);
         return;
       }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      let target = params.get('redirect') || '/admin';
-      if (user) {
-        const { data: membership } = await supabase
-          .from('organization_members')
-          .select('id')
-          .eq('user_id', user.id)
-          .limit(1)
-          .maybeSingle();
-        if (!membership) target = '/onboarding';
+      if (data.session) {
+        router.push('/onboarding');
+        router.refresh();
+      } else {
+        setNotice(
+          'Account created. Please check your email to confirm your address, then sign in.'
+        );
+        setLoading(false);
       }
-      router.push(target);
-      router.refresh();
     } catch {
       setError('Something went wrong. Please try again.');
       setLoading(false);
@@ -69,11 +68,13 @@ export default function LoginClient() {
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-brand text-white">
             <GraduationCap className="h-7 w-7" />
           </div>
-          <h1 className="text-xl font-bold text-slate-900">SOMA Portal</h1>
-          <p className="mt-1 text-sm text-slate-500">Sign in to manage exams</p>
+          <h1 className="text-xl font-bold text-slate-900">Create your account</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Start building exams on SOMA Portal
+          </p>
         </div>
 
-        <GoogleButton label="Sign in with Google" />
+        <GoogleButton label="Sign up with Google" />
 
         <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
           <div className="h-px flex-1 bg-slate-200" />
@@ -82,6 +83,16 @@ export default function LoginClient() {
         </div>
 
         <form onSubmit={onSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-700">Full name</label>
+            <input
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className={inputCls}
+            />
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-700">Email</label>
             <input
@@ -99,6 +110,7 @@ export default function LoginClient() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
               className={inputCls}
             />
           </div>
@@ -106,29 +118,28 @@ export default function LoginClient() {
           {error && (
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
+          {notice && (
+            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+              {notice}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 font-semibold text-white transition hover:bg-brand-dark disabled:opacity-60"
           >
-            <LogIn className="h-5 w-5" />
-            {loading ? 'Signing in…' : 'Sign In'}
+            <UserPlus className="h-5 w-5" />
+            {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          New here?{' '}
-          <Link href="/signup" className="font-semibold text-brand hover:underline">
-            Create an account
+          Already have an account?{' '}
+          <Link href="/login" className="font-semibold text-brand hover:underline">
+            Sign in
           </Link>
         </p>
-        <a
-          href="/"
-          className="mt-3 block text-center text-sm text-slate-400 hover:text-slate-600"
-        >
-          ← Back to home
-        </a>
       </div>
     </div>
   );

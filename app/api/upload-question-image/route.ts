@@ -7,7 +7,7 @@ const ALLOWED = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
 const ALLOWED_EXT = new Set(['png', 'jpg', 'jpeg', 'webp']);
 
 export async function POST(request: Request) {
-  // 1) Authenticate: must be logged in AND an editor of at least one org.
+  // 1) Authenticate: must be logged in.
   const supabase = createClient();
   const {
     data: { user },
@@ -15,18 +15,8 @@ export async function POST(request: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
-  const { data: membership } = await supabase
-    .from('organization_members')
-    .select('id')
-    .eq('user_id', user.id)
-    .in('role', ['owner', 'admin'])
-    .limit(1)
-    .maybeSingle();
-  if (!membership) {
-    return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
-  }
 
-  // 2) Read the uploaded file.
+  // 2) Read the uploaded file and target folder kind.
   let formData: FormData;
   try {
     formData = await request.formData();
@@ -37,9 +27,24 @@ export async function POST(request: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: 'No file provided.' }, { status: 400 });
   }
-  // "questions" (default) or "choices" — just controls the storage folder.
-  const kindRaw = formData.get('kind');
-  const folder = kindRaw === 'choices' ? 'choices' : 'questions';
+  const kindRaw = (formData.get('kind') as string | null) ?? 'questions';
+  const folder =
+    kindRaw === 'choices' ? 'choices' : kindRaw === 'proof' ? 'proof' : 'questions';
+
+  // 3) For question/choice uploads, require org editor role. Proof uploads are
+  //    allowed for any logged-in user (it's their own payment screenshot).
+  if (folder !== 'proof') {
+    const { data: membership } = await supabase
+      .from('organization_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .in('role', ['owner', 'admin'])
+      .limit(1)
+      .maybeSingle();
+    if (!membership) {
+      return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
+    }
+  }
 
   // 3) Validate type and size. Reject SVG and anything not allowed.
   const ext = (file.name.split('.').pop() || '').toLowerCase();

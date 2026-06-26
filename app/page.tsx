@@ -15,7 +15,12 @@ export default function LandingPage() {
           <GraduationCap className="h-7 w-7 text-brand" />
           <span className="font-bold text-brand">{t('appName')}</span>
         </div>
-        <LanguageSwitcher />
+        <div className="flex items-center gap-3">
+          <Link href="/pricing" className="text-sm font-medium text-slate-600 hover:text-brand">
+            Pricing
+          </Link>
+          <LanguageSwitcher />
+        </div>
       </header>
 
       <section className="mx-auto max-w-3xl px-4 py-16 text-center">

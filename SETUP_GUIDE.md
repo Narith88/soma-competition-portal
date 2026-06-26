@@ -193,3 +193,77 @@ details → take the timed exam. It auto-submits when time runs out.
   (building icon, top bar). Existing SOMA exams are under "SOMA Education Group".
 
 You've got this. 🚀
+
+---
+
+# Adding billing & paid plans (this version)
+
+There are 3 extra steps over the multi-tenant version, then you can sell access.
+
+## Step A — Run Migration 003
+
+1. Open Supabase → **SQL Editor** → **+ New query**.
+2. In VS Code open
+   `supabase/migrations/003_billing_and_plans.sql`, select all (`Ctrl+A`), copy.
+3. Paste into Supabase, click **Run**, wait for **Success**.
+
+This adds: pricing catalog (Free/Starter/Pro + 4 packages), 7-day trial dates
+on every existing organization, payment records table, and quota functions.
+
+## Step B — Mark yourself as the platform admin
+
+The platform admin is the person who approves payments. To become one:
+
+1. Supabase → **SQL Editor** → **+ New query**.
+2. Paste this and replace the email with yours:
+   ```sql
+   update public.profiles set role = 'admin' where email = 'YOUR_EMAIL_HERE';
+   ```
+3. Click **Run**.
+4. Refresh your app. You'll see a yellow "Platform admin" bar in the top nav
+   with a **Review payments** link.
+
+> Note: the **platform admin** role is separate from **organization admin**. You
+> can be a platform admin without being part of any organization. Members inside
+> an organization are still owners/admins/viewers of that org only.
+
+## Step C — Try a test purchase (locally)
+
+1. Visit `/pricing` — you'll see the three monthly tiers and four packages.
+2. Click **Choose Starter** — you'll be sent to a payment page with a QR code,
+   order summary, and an upload field.
+3. Upload any image as "proof of payment" and click **Submit for review**.
+4. Open `/admin/platform/payments` (visible only to you, the platform admin).
+5. Click **Approve** on your test payment.
+6. Go back to `/admin/billing` — your plan is now Starter, with the monthly
+   quota refilled.
+
+## How real customers will pay
+
+In production:
+1. They sign up at `/signup`, get a 7-day free trial (30 respondents).
+2. When the trial expires (or they want more), they hit `/pricing`.
+3. They open the checkout, scan the QR code with their banking app (Bakong,
+   ABA, Wing, etc.), transfer the amount **+ 10% tax** to your account, and
+   upload the screenshot.
+4. You log in, go to **Platform admin → Review payments**, verify the
+   screenshot matches the order, and click **Approve**.
+5. Their plan/quota is applied instantly.
+
+## QR code customization
+
+For Phase 1 the QR encodes a text payload identifying the order. To send
+buyers to YOUR Bakong / ABA account, swap the QR data in
+`app/admin/billing/payments/[id]/page.tsx`. The `qrSrc` line is the only place
+that line is built. Replace `qrPayload` with the actual KHQR string from your
+bank — or print a static QR poster and skip the dynamic QR entirely.
+
+## Phase 2 — Automating payments later
+
+When you're ready to remove the manual approval step:
+- Get a Bakong merchant API account from NBC.
+- Add a webhook route that listens for "payment received" events.
+- In the webhook, find the matching `payments` row, mark it `approved`, and
+  call the existing `apply_approved_payment(payment_id)` RPC.
+- No other code changes needed — the rest of the app already uses that
+  function as the single source of truth.

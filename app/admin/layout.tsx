@@ -29,12 +29,21 @@ export default async function AdminLayout({
   }
   const active = await getActiveOrganization(orgs);
 
+  // Check if this user is a platform admin (for the "Review payments" link).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .maybeSingle();
+  const isPlatformAdmin = profile?.role === 'admin';
+
   return (
     <div className="min-h-screen bg-slate-50">
       <AdminNav
         email={user.email}
         organizations={orgs}
         activeOrgId={active?.organization_id ?? null}
+        isPlatformAdmin={isPlatformAdmin}
       />
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>
     </div>

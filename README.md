@@ -126,3 +126,59 @@ later without another migration. No limits are enforced today.
 Push to GitHub, import the repo in Vercel, add the same environment variables in
 the Vercel project settings, set `NEXT_PUBLIC_SITE_URL` to your real domain, and
 update Supabase Auth URL configuration to include your production `/auth/callback`.
+
+---
+
+## Billing & plans (new)
+
+SOMA Portal now supports **paid plans** with manual QR-code payment approval.
+
+**Subscription plans** (monthly):
+- **Free** — 7-day trial, 30 respondents total, no CSV export
+- **Starter** ($15/mo + 10% tax) — 300 respondents/mo, CSV export, image choices, 2 admins
+- **Pro** ($49/mo + 10% tax) — 3000 respondents/mo, custom branding, certificates, 5 admins
+
+**One-time competition packages**:
+- Mini ($15) — 100 respondents
+- Small ($39) — 300 respondents
+- Medium ($69) — 1000 respondents
+- Large ($109) — 3000 respondents
+
+### How payment works (manual approval, Phase 1)
+
+1. Buyer chooses a plan on `/pricing` → checkout creates a `payments` row.
+2. The order page shows a **QR code** with the order total. Buyer scans with
+   Bakong / ABA / Wing and transfers the amount.
+3. Buyer uploads a payment screenshot on the same page.
+4. The **platform admin** (you) reviews the payment at
+   `/admin/platform/payments` and clicks **Approve**.
+5. The DB function `apply_approved_payment` is called server-side: for
+   subscriptions it switches the org's plan and refills respondent quota for a
+   30-day cycle; for packages it adds respondents to the org's balance.
+
+### Becoming the platform admin (you)
+
+After running the migrations, mark your own profile as a **platform admin**
+(separate from per-org roles):
+
+```sql
+update public.profiles set role = 'admin' where email = 'YOUR_EMAIL';
+```
+
+Then sign in and you'll see a "Platform admin" bar in the top nav with a
+"Review payments" link.
+
+### Plan enforcement
+
+- **Attempt start** calls the `consume_respondent` DB function which atomically
+  decrements the org's quota (or refuses if trial expired / out of quota).
+- **CSV export button** is hidden for plans without `csv_export`.
+- **Trial banner** on the dashboard shows days/respondents left.
+- **Tax (10%)** is added to every paid checkout (server-side calculation).
+
+### Phase 2 (automation) — not yet implemented
+
+The architecture is ready for Bakong/KHQR API integration:
+- `payments` already has all the fields needed for an automated webhook.
+- `apply_approved_payment(payment_id)` is the single function that grants
+  benefits, so an automated webhook just calls the same RPC.

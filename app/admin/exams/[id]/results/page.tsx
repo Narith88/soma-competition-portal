@@ -3,9 +3,10 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Flag } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveOrganization } from '@/lib/org';
+import { getOrgBillingStatus, hasFeature } from '@/lib/billing';
 import { formatDateTime, percentage, formatDuration, attemptDurationSeconds } from '@/lib/utils';
 import type { ResultRow } from '@/lib/csv';
-import ExportButton from './ExportButton';
+import ExportOrUpgrade from './ExportOrUpgrade';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ export default async function ResultsPage({
   const supabase = createClient();
   const org = await getActiveOrganization();
   const orgId = org?.organization_id ?? '00000000-0000-0000-0000-000000000000';
+  const billingStatus = await getOrgBillingStatus(orgId);
 
   const { data: exam } = await supabase
     .from('exams')
@@ -85,7 +87,11 @@ export default async function ResultsPage({
             {exam.title} · {list.length} attempt{list.length === 1 ? '' : 's'}
           </p>
         </div>
-        <ExportButton rows={rows} filename={`soma_results_${safeTitle}.csv`} />
+        <ExportOrUpgrade
+          rows={rows}
+          filename={`soma_results_${safeTitle}.csv`}
+          allowed={hasFeature(billingStatus, 'csv_export')}
+        />
       </div>
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">

@@ -35,6 +35,28 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
+
+  // Enforce plan limits: the SECURITY DEFINER function returns true and
+  // atomically decrements the org's respondent counter, or returns false if
+  // the trial expired / quota is used up.
+  if (exam.organization_id) {
+    const { data: allowed, error: rpcErr } = await supabase.rpc('consume_respondent', {
+      org_id: exam.organization_id,
+    });
+    if (rpcErr) {
+      return NextResponse.json({ error: 'Could not start the exam.' }, { status: 500 });
+    }
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error:
+            'This exam is currently unavailable. The organization has used up its respondent quota or its free trial has ended.',
+        },
+        { status: 402 }
+      );
+    }
+  }
+
   const { data, error } = await supabase
     .from('attempts')
     .insert({
